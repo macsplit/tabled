@@ -16,7 +16,7 @@ Parse and format tabular data as beautifully aligned markdown tables.
 
 ## Online Demo
 
-Try it online: **[https://macsplit.github.io/tabled/](https://macsplit.github.io/tabled/)**
+Try it online: **[https://macsplit.github.io/tabled/docs/](https://macsplit.github.io/tabled/docs/)**
 
 The browser version runs 100% client-side - no data is sent to any server. Perfect for formatting tables quickly without installing anything!
 
