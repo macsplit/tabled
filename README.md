@@ -12,6 +12,13 @@ Parse and format tabular data as beautifully aligned markdown tables.
 - **Dual interface**: Command-line (stdio) and REST API interfaces
 - **Rate limiting**: Built-in API rate limiting for production use
 - **Empty column filtering**: Automatically removes columns with only empty/whitespace values
+- **Browser version**: Interactive web interface for formatting tables online
+
+## Online Demo
+
+Try it online: **[https://macsplit.github.io/tabled/](https://macsplit.github.io/tabled/)**
+
+The browser version runs 100% client-side - no data is sent to any server. Perfect for formatting tables quickly without installing anything!
 
 ## Installation
 
@@ -182,6 +189,25 @@ The REST API supports the `maxWidth` query parameter to configure table width pe
 ### Environment Variables
 - `PORT`: HTTP server port (default: 3000)
 
+## Browser Version
+
+The browser version provides a simple web interface for formatting tables without any installation. It uses the same parsing and formatting logic as the CLI and API versions.
+
+### Features
+- Paste any tabular data (CSV, TSV, Markdown, SQL dump)
+- Click "Format Table" to convert to markdown
+- Copy formatted output to clipboard
+- 100% client-side - no data leaves your browser
+- Responsive design works on mobile and desktop
+
+### Running Locally
+```bash
+# Serve the docs folder with any static file server
+cd docs
+python3 -m http.server 8080
+# Visit http://localhost:8080
+```
+
 ## Project Structure
 
 ```
@@ -191,6 +217,11 @@ tabled/
 │   ├── server.js      # REST API server
 │   ├── parsers.js     # Input format detection and parsing
 │   └── formatter.js   # Markdown table formatting
+├── docs/              # GitHub Pages / Browser version
+│   ├── index.html     # Web interface
+│   └── js/
+│       ├── parsers.js # Browser-compatible parser (ES modules)
+│       └── formatter.js # Browser-compatible formatter (ES modules)
 ├── test/
 │   └── sample-*.txt   # Test data files
 ├── package.json
