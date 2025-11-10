@@ -40,6 +40,36 @@ function calculateTableWidth(colWidths) {
 }
 
 /**
+ * Identify which columns have at least one non-empty value
+ * @param {Array<Array<string>>} data - 2D array
+ * @returns {Array<number>} - Array of column indices that are non-empty
+ */
+function identifyNonEmptyColumns(data) {
+  if (!data || data.length === 0) return [];
+
+  const numCols = Math.max(...data.map(row => row.length));
+  const nonEmptyColumns = [];
+
+  for (let colIdx = 0; colIdx < numCols; colIdx++) {
+    let hasValue = false;
+
+    for (let row of data) {
+      const value = String(row[colIdx] || '').trim();
+      if (value !== '') {
+        hasValue = true;
+        break;
+      }
+    }
+
+    if (hasValue) {
+      nonEmptyColumns.push(colIdx);
+    }
+  }
+
+  return nonEmptyColumns;
+}
+
+/**
  * Check if first column has unique values (potential key column)
  * @param {Array<Array<string>>} data - 2D array
  * @returns {boolean} - True if first column has unique values
@@ -187,30 +217,44 @@ function format(data, maxWidth = MAX_TABLE_WIDTH) {
     return newRow;
   });
 
+  // Filter out empty columns
+  const nonEmptyColIndices = identifyNonEmptyColumns(normalizedData);
+
+  // If all columns are empty, return empty string
+  if (nonEmptyColIndices.length === 0) {
+    return '';
+  }
+
+  // Filter data to only include non-empty columns
+  const filteredData = normalizedData.map(row =>
+    nonEmptyColIndices.map(idx => row[idx])
+  );
+
   // Calculate column widths
-  const colWidths = calculateColumnWidths(normalizedData);
+  const colWidths = calculateColumnWidths(filteredData);
   const totalWidth = calculateTableWidth(colWidths);
 
   // If everything fits, format as single table
+  const filteredNumCols = filteredData[0].length;
   if (totalWidth <= maxWidth) {
-    const colIndices = Array.from({ length: numCols }, (_, i) => i);
-    return formatSingleTable(normalizedData, colIndices);
+    const colIndices = Array.from({ length: filteredNumCols }, (_, i) => i);
+    return formatSingleTable(filteredData, colIndices);
   }
 
   // Check if we should use first column as key
-  const hasKeyColumn = hasUniqueFirstColumn(normalizedData);
+  const hasKeyColumn = hasUniqueFirstColumn(filteredData);
 
   // Check if we should split or try to squeeze
   const avgColWidth = colWidths.reduce((a, b) => a + b, 0) / colWidths.length;
-  const shouldSplit = numCols > MAX_COLUMNS_BEFORE_SPLIT ||
+  const shouldSplit = filteredNumCols > MAX_COLUMNS_BEFORE_SPLIT ||
                        avgColWidth < MIN_COLUMN_WIDTH * 2;
 
   if (!shouldSplit) {
     // Try to squeeze into one table by reducing column widths proportionally
-    const overhead = (numCols * 3) + 1; // Pipes and spaces
+    const overhead = (filteredNumCols * 3) + 1; // Pipes and spaces
     const availableWidth = maxWidth - overhead;
 
-    if (availableWidth > numCols * MIN_COLUMN_WIDTH) {
+    if (availableWidth > filteredNumCols * MIN_COLUMN_WIDTH) {
       // Scale down column widths proportionally
       const totalContentWidth = colWidths.reduce((a, b) => a + b, 0);
       const scale = availableWidth / totalContentWidth;
@@ -238,7 +282,7 @@ function format(data, maxWidth = MAX_TABLE_WIDTH) {
       }
 
       // Truncate cell values to fit adjusted widths
-      const truncatedData = normalizedData.map(row =>
+      const truncatedData = filteredData.map(row =>
         row.map((cell, idx) => {
           const str = String(cell || '');
           if (str.length > adjustedWidths[idx]) {
@@ -248,7 +292,7 @@ function format(data, maxWidth = MAX_TABLE_WIDTH) {
         })
       );
 
-      const colIndices = Array.from({ length: numCols }, (_, i) => i);
+      const colIndices = Array.from({ length: filteredNumCols }, (_, i) => i);
       return formatSingleTable(truncatedData, colIndices);
     }
   }
@@ -257,7 +301,7 @@ function format(data, maxWidth = MAX_TABLE_WIDTH) {
   const groups = splitColumnsIntoGroups(colWidths, maxWidth, hasKeyColumn);
 
   const tables = groups.map(group => {
-    return formatSingleTable(normalizedData, group);
+    return formatSingleTable(filteredData, group);
   });
 
   return tables.join('\n\n');
@@ -267,6 +311,7 @@ module.exports = {
   format,
   calculateColumnWidths,
   calculateTableWidth,
+  identifyNonEmptyColumns,
   hasUniqueFirstColumn,
   formatRow,
   formatSeparator
