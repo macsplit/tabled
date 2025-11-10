@@ -169,6 +169,27 @@ Potential improvements:
 - Test with multiple input formats before committing
 - Document any new heuristics or algorithms
 
+## Deploying Browser Updates to GitHub Pages
+
+The browser version is hosted at https://macsplit.github.io/tabled/docs/ via a git submodule in the macsplit.github.io repository.
+
+**Important**: After pushing changes to the tabled repository, you must update the submodule reference in macsplit.github.io:
+
+```bash
+# Navigate to the parent GitHub Pages repository
+cd ../macsplit.github.io
+
+# Update the submodule to point to the latest commit
+git submodule update --remote tabled
+
+# Commit and push the submodule update
+git add tabled
+git commit -m "Update tabled submodule to latest version"
+git push origin main
+```
+
+Without this step, the GitHub Pages site will continue to show the old version even though the tabled repository has been updated. The submodule acts as a pointer to a specific commit, so it must be manually advanced after each update.
+
 ## Code Style
 
 - Use clear, descriptive function names
