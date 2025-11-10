@@ -71,15 +71,23 @@ function identifyNonEmptyColumns(data) {
 
 /**
  * Check if first column has unique values (potential key column)
+ * Ignores empty/whitespace values when checking uniqueness
  * @param {Array<Array<string>>} data - 2D array
- * @returns {boolean} - True if first column has unique values
+ * @returns {boolean} - True if first column has unique non-empty values
  */
 function hasUniqueFirstColumn(data) {
   if (!data || data.length === 0) return false;
 
   const firstColValues = new Set();
   for (let row of data) {
-    const value = String(row[0] || '');
+    const value = String(row[0] || '').trim();
+
+    // Skip empty/whitespace values
+    if (value === '') {
+      continue;
+    }
+
+    // Check if we've seen this non-empty value before
     if (firstColValues.has(value)) {
       return false;
     }
