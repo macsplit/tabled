@@ -1,0 +1,5 @@
+Product	Price	Stock	Category
+Laptop	999.99	15	Electronics
+Mouse	29.99	150	Electronics
+Desk	299.99	25	Furniture
+Chair	149.99	40	Furniture

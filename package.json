@@ -1,0 +1,19 @@
+{
+  "name": "tabled",
+  "version": "1.0.0",
+  "description": "Parse and format tabular data as beautifully aligned markdown tables",
+  "main": "src/index.js",
+  "bin": {
+    "tabled": "./src/index.js"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node test/test.js"
+  },
+  "keywords": ["table", "markdown", "csv", "formatter"],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

@@ -1,0 +1,7 @@
++----+----------+-------+
+| id | username | email |
++----+----------+-------+
+| 1  | admin    | admin@example.com |
+| 2  | user1    | user1@example.com |
+| 3  | user2    | user2@example.com |
++----+----------+-------+
