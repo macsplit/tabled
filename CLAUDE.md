@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Tabled is a Node.js command-line application that parses various tabular text formats and outputs beautifully formatted markdown tables that look great in both plain text and rendered form.
+Tabled is a Node.js application that parses various tabular text formats and outputs beautifully formatted markdown tables that look great in both plain text and rendered form. It provides both a command-line interface (stdio) and a REST API for integration into web services.
 
 ## Architecture
 
@@ -30,15 +30,44 @@ Handles the complex logic of formatting tables with width constraints:
 - **Key Column Detection**: Identifies if first column contains unique values and repeats it in split tables
 - **Alignment**: Pads cells with spaces so pipes align vertically in plain text
 
-#### 3. `src/index.js` - Main Application
+#### 3. `src/index.js` - CLI Application
 
-Entry point that orchestrates the pipeline:
+Command-line entry point that orchestrates the pipeline:
 1. Read from stdin
 2. Parse input using detected format
 3. Format as markdown table(s)
 4. Output to stdout
 
+#### 4. `src/server.js` - REST API Server
+
+HTTP server providing REST API access to the same parsing and formatting logic:
+
+- **Framework**: Express.js for HTTP handling
+- **Rate Limiting**: express-rate-limit middleware (100 requests per 15 minutes per IP)
+- **Endpoints**:
+  - `POST /format`: Main formatting endpoint
+    - Accepts plain text or JSON (`data` or `text` fields)
+    - Supports `maxWidth` query parameter
+    - Returns formatted markdown table as plain text
+  - `GET /health`: Health check endpoint
+- **Configuration**: Port via `PORT` environment variable (default: 3000)
+- **Shared Logic**: Uses same `parsers.js` and `formatter.js` modules as CLI
+
 ### Design Decisions
+
+#### Separation of Concerns
+
+The application is architected with clear separation between interface and logic:
+
+- **Interface Layer**: `src/index.js` (CLI) and `src/server.js` (REST API)
+  - Handle input/output for their respective interfaces
+  - No duplication of business logic
+- **Logic Layer**: `src/parsers.js` and `src/formatter.js`
+  - Pure functions handling parsing and formatting
+  - Interface-agnostic - work with both CLI and API
+  - Easy to test in isolation
+
+This architecture allows adding new interfaces (GraphQL, gRPC, etc.) without duplicating parsing/formatting logic.
 
 #### Width Management
 
@@ -57,6 +86,12 @@ When a table exceeds 100 characters, the formatter:
 
 If the first column has unique values across all rows, it's treated as a key column and repeated in each split table. This provides context when viewing split tables.
 
+**Important**: When checking uniqueness, empty and whitespace-only values are ignored. Only actual values are compared. This allows sparse first columns to still be treated as keys if their non-empty values are unique.
+
+#### Empty Column Filtering
+
+Columns that contain only empty or whitespace values across all rows are automatically filtered out before formatting. This produces cleaner output when dealing with sparse data or CSV files with trailing delimiters.
+
 #### Formatting Rules
 
 - No colons for alignment (standard markdown alignment syntax)
@@ -73,24 +108,59 @@ Test files in `test/` directory cover:
 - Markdown table parsing
 - SQL dump parsing
 - Wide table splitting
+- Empty column filtering
+- Key column detection with sparse data
+
+### CLI Testing
 
 Run tests manually:
 ```bash
 node src/index.js < test/sample-csv.txt
 node src/index.js < test/sample-wide.txt
+node src/index.js < test/sample-empty-cols.txt
 ```
+
+### API Testing
+
+Start the server:
+```bash
+npm run server
+```
+
+Test endpoints:
+```bash
+# Health check
+curl http://localhost:3000/health
+
+# Format CSV data
+curl -X POST http://localhost:3000/format \
+  -H "Content-Type: text/plain" \
+  --data-binary @test/sample-csv.txt
+
+# Format with custom width
+curl -X POST "http://localhost:3000/format?maxWidth=80" \
+  -H "Content-Type: text/plain" \
+  --data-binary @test/sample-wide.txt
+```
+
+## Implemented Features
+
+1. ✅ **REST API**: HTTP server with rate limiting
+2. ✅ **Configurable width (API)**: maxWidth parameter for API requests
+3. ✅ **Empty column filtering**: Automatic removal of empty/whitespace columns
 
 ## Future Enhancements
 
-Potential improvements mentioned in the spec:
+Potential improvements:
 
-1. **Configurable width**: Make max table width a command-line parameter
-2. **REST API**: Extend beyond stdio to accept HTTP requests
-3. **Advanced CSV parsing**: Handle quoted commas and escaped characters
-4. **More format support**: Excel, JSON, etc.
-5. **Output format options**: Support other formats beyond markdown
-6. **Column selection**: Allow users to choose which columns to display
-7. **Sorting and filtering**: Add data manipulation capabilities
+1. **Configurable width (CLI)**: Make max table width a command-line parameter for CLI
+2. **Advanced CSV parsing**: Handle quoted commas and escaped characters properly
+3. **More format support**: Excel, JSON, etc.
+4. **Output format options**: Support other formats beyond markdown (HTML, ASCII, etc.)
+5. **Column selection**: Allow users to choose which columns to display
+6. **Sorting and filtering**: Add data manipulation capabilities
+7. **Authentication**: Add API key authentication for production deployments
+8. **Batch processing**: Support multiple tables in a single API request
 
 ## Development Guidelines
 

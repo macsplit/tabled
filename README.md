@@ -9,6 +9,9 @@ Parse and format tabular data as beautifully aligned markdown tables.
 - **Intelligent table splitting**: Splits wide tables across multiple tables when needed
 - **Key column detection**: Repeats first column in split tables when it contains unique values
 - **Beautiful formatting**: Pipes align vertically for easy reading in plain text
+- **Dual interface**: Command-line (stdio) and REST API interfaces
+- **Rate limiting**: Built-in API rate limiting for production use
+- **Empty column filtering**: Automatically removes columns with only empty/whitespace values
 
 ## Installation
 
@@ -18,7 +21,7 @@ npm install
 
 ## Usage
 
-### Command Line
+### Command Line Interface
 
 Pipe any tabular data into tabled:
 
@@ -48,6 +51,79 @@ node src/index.js < data.csv
 npm link
 tabled < data.csv
 ```
+
+### REST API
+
+Start the HTTP server:
+
+```bash
+npm run server
+```
+
+The server listens on port 3000 by default (configurable via `PORT` environment variable):
+
+```bash
+PORT=8080 npm run server
+```
+
+#### API Endpoints
+
+**POST /format** - Format tabular data as markdown table
+
+Request formats:
+
+1. Plain text body:
+```bash
+curl -X POST http://localhost:3000/format \
+  -H "Content-Type: text/plain" \
+  -d "Name,Age,City
+John,25,NYC
+Jane,30,LA"
+```
+
+2. JSON body with `data` field:
+```bash
+curl -X POST http://localhost:3000/format \
+  -H "Content-Type: application/json" \
+  -d '{"data": "Product\tPrice\nLaptop\t999.99\nMouse\t29.99"}'
+```
+
+3. JSON body with `text` field:
+```bash
+curl -X POST http://localhost:3000/format \
+  -H "Content-Type: application/json" \
+  -d '{"text": "ID,Name\n1,Alice\n2,Bob"}'
+```
+
+4. File input:
+```bash
+curl -X POST http://localhost:3000/format \
+  -H "Content-Type: text/plain" \
+  --data-binary @data.csv
+```
+
+Query parameters:
+- `maxWidth` (optional): Maximum table width in characters (default: 100, minimum: 20)
+
+```bash
+curl -X POST "http://localhost:3000/format?maxWidth=80" \
+  -H "Content-Type: text/plain" \
+  --data-binary @data.csv
+```
+
+**GET /health** - Health check endpoint
+
+```bash
+curl http://localhost:3000/health
+# Response: {"status":"ok","service":"tabled"}
+```
+
+#### Rate Limiting
+
+The API implements rate limiting to prevent abuse:
+- **Limit**: 100 requests per 15 minutes per IP address
+- Rate limit information is returned in response headers
+- Exceeding the limit returns HTTP 429 with error message
 
 ## Examples
 
@@ -97,19 +173,28 @@ Tabled automatically detects the input format using heuristics:
 
 ## Configuration
 
-Currently, the maximum table width is hardcoded to 100 characters. Future versions will support configurable width and other formatting options.
+### CLI
+The maximum table width is hardcoded to 100 characters in the CLI. Future versions will support command-line arguments for configuration.
+
+### API
+The REST API supports the `maxWidth` query parameter to configure table width per request (default: 100, minimum: 20).
+
+### Environment Variables
+- `PORT`: HTTP server port (default: 3000)
 
 ## Project Structure
 
 ```
 tabled/
 ├── src/
-│   ├── index.js       # Main entry point
+│   ├── index.js       # CLI entry point (stdio interface)
+│   ├── server.js      # REST API server
 │   ├── parsers.js     # Input format detection and parsing
 │   └── formatter.js   # Markdown table formatting
 ├── test/
 │   └── sample-*.txt   # Test data files
 ├── package.json
+├── CLAUDE.md          # Development documentation
 └── README.md
 ```
 
